@@ -40,7 +40,8 @@ ui <- fluidPage(
     ),
     mainPanel(
       plotOutput("score_plot"),
-      p("Plot ancestry-normalized CAD polygenic risk scores for a random selection of individuals from a HGDP/1k Genomes reference population")
+      p("Plot ancestry-normalized CAD polygenic risk scores for a random selection of individuals from a HGDP/1k Genomes reference population"),
+      p("using https://github.com/PGScatalog/pgsc_calc")
     )
   )
 )
