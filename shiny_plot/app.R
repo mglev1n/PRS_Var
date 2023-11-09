@@ -12,7 +12,7 @@ model_list <- c("PGS000013", "PGS000018", "PGS000058", "PGS000296", "PGS000329",
                 "PGS001355", "PGS001780", "PGS001839", "PGS002048", "PGS002244", "PGS002775", "PGS002776", "PGS002809", "PGS003355", "PGS003356", "PGS003438",
                 "PGS003446", "PGS003725", "PGS003726", "PGS_LDP2Auto", "PGS_prscsx")
 
-df_ntile_norm <- bigreadr::fread2("/project/damrauer_shared/Users/sabramow/PRS_Var/files/CAD_PGS_ref_ntile.txt")
+df_ntile_norm <- bigreadr::fread2("files/CAD_PGS_ref_ntile.txt")
 
 custom_theme <- theme_minimal() +
   theme(
