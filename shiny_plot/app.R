@@ -34,8 +34,8 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       checkboxGroupInput("selected_models", "Select Models", choices = model_list, selected = model_list),
-      numericInput("seed_input", "Seed value:", value = 2023),
-      sliderInput("sample_size_input", "Number of Individuals", min = 1, max = 6, value = 8675309, step = 1),
+      numericInput("seed_input", "Seed value:", value = 8675309),
+      sliderInput("sample_size_input", "Number of Individuals", min = 1, max = 6, value = 5, step = 1),
       actionButton("submit_button", "Generate Plot")
     ),
     mainPanel(
