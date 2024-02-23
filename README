@@ -1,1 +1,2 @@
+To run
 shinylive::export(appdir = "shiny_plot", destdir = "docs")
