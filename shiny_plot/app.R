@@ -182,15 +182,15 @@
 # It supports 3 stats forecasting models - Linear Regression, ARIMA, and Holt-Winters
 
 library(shiny)
-library(bigreadr)
+library(vroom)
 data(AirPassengers)
 
-df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
+df_ntile_norm <- vroom::vroom("CAD_PGS_ref_ntile.txt")
 # UI ----
 ui <- fluidPage(
 
   # App title ----
-  titlePanel("Sarah's super frustrated Forecasting Sandbox - bigreadrloadfile"),
+  titlePanel("Sarah's frustrated Forecasting Sandbox - vroooom"),
   sidebarLayout(
 
     sidebarPanel(width = 3,
