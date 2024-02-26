@@ -3,7 +3,7 @@ library(bigreadr)
 
 # Assuming df_ntile_norm is already loaded in your R session
 # If not, load your dataframe here
-df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
+#df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
 # Define UI for the app
 
 # Define UI
