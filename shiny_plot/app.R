@@ -2,7 +2,7 @@ library(shiny)
 library(bigreadr)
 
 # Assuming df_ntile_norm is already loaded in your R session
-# If not, load your dataframe here
+# If not, load your dataframe here. test 124
 df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
 # Define UI for the app
 ui <- fluidPage(
