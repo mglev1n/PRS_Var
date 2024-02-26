@@ -184,12 +184,12 @@
 library(shiny)
 data(AirPassengers)
 
-df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
+#df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
 # UI ----
 ui <- fluidPage(
 
   # App title ----
-  titlePanel("Forecasting Sandbox"),
+  titlePanel("Sarah's frustrated Forecasting Sandbox"),
   sidebarLayout(
 
     sidebarPanel(width = 3,
