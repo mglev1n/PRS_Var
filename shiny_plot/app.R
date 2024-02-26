@@ -3,26 +3,43 @@ library(bigreadr)
 
 # Assuming df_ntile_norm is already loaded in your R session
 # If not, load your dataframe here
-#df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
+df_ntile_norm <- bigreadr::fread2("CAD_PGS_ref_ntile.txt")
 # Define UI for the app
-
-# Define UI
 ui <- fluidPage(
-  titlePanel("Current Working Directory"),
-  # Display the working directory
-  textOutput("cwd")
+  titlePanel("ntile_PGS Score Visualizations"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("scoreSelect", "Select a PGS Score:",
+                  choices = colnames(df_ntile_norm)[2:length(colnames(df_ntile_norm))]),
+      selectInput("scoreCompare", "Select another PGS Score to compare (optional):",
+                  choices = c("None", colnames(df_ntile_norm)[2:length(colnames(df_ntile_norm))]))
+    ),
+    mainPanel(
+      plotOutput("distPlot")
+    )
+  )
 )
 
 # Define server logic
 server <- function(input, output) {
-  output$cwd <- renderText({
-    # Get and render the current working directory
-    getwd()
+  output$distPlot <- renderPlot({
+    selectedScore <- input$scoreSelect
+    compareScore <- input$scoreCompare
+    
+    if(compareScore == "None") {
+      hist(df_ntile_norm[[selectedScore]], main = paste("Distribution of", selectedScore), xlab = selectedScore, ylab = "Frequency", col = "skyblue")
+    } else {
+      hist(df_ntile_norm[[selectedScore]], main = paste("Comparison of", selectedScore, "and", compareScore), xlab = "Score", ylab = "Frequency", col = "skyblue", alpha = 0.5)
+      hist(df_ntile_norm[[compareScore]], add = TRUE, col = "salmon", alpha = 0.5)
+      legend("topright", legend = c(selectedScore, compareScore), fill = c("skyblue", "salmon"))
+    }
   })
 }
 
 # Run the application
 shinyApp(ui = ui, server = server)
+
+
 
 # This version is used in the PRS_Var folder, attempting to host the shiny app publicly on github
 # 
