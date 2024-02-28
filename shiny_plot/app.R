@@ -13,6 +13,7 @@ library(ggsci)
 library(ggdist)
 library(patchwork)
 library(vroom)
+library(readr)
 
 # Define the list of models
 model_list <- c("PGS000010", "PGS000011", "PGS000012", "PGS000013", "PGS000018", "PGS000019", "PGS000057",
@@ -24,7 +25,8 @@ model_list <- c("PGS000010", "PGS000011", "PGS000012", "PGS000013", "PGS000018",
                 "PGS003446", "PGS003725", "PGS003726", "PGS003866", "PGS_LDP2Auto", "PGS_prscsx")
 
 
-df_ntile_norm <- vroom::vroom("CAD_PGS_ref_ntile.txt")
+#df_ntile_norm <- vroom::vroom("CAD_PGS_ref_ntile.txt")
+df_ntile_norm <- read.csv("CAD_ref_ntile.csv")
 
 
 custom_theme <- theme_minimal() +
