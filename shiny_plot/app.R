@@ -1,10 +1,4 @@
-# 
-# 
-# 
-# #This version is used in the PRS_Var folder, attempting to host the shiny app publicly on github
-# 
 library(shiny)
-library(shinyWidgets)
 library(dplyr)
 library(ggplot2)
 library(reshape2)
@@ -24,10 +18,7 @@ model_list <- c("PGS000010", "PGS000011", "PGS000012", "PGS000013", "PGS000018",
                 "PGS002776", "PGS002777", "PGS002778", "PGS002809", "PGS003355", "PGS003356", "PGS003438",
                 "PGS003446", "PGS003725", "PGS003726", "PGS003866", "PGS_LDP2Auto", "PGS_prscsx")
 
-
-#df_ntile_norm <- vroom::vroom("CAD_PGS_ref_ntile.txt")
 df_ntile_norm <- read.csv("CAD_ref_ntile.csv")
-
 
 custom_theme <- theme_minimal() +
   theme(
@@ -35,388 +26,241 @@ custom_theme <- theme_minimal() +
     text = element_text(family = "Arial", size = 14),
     plot.title = element_text(size = 16, hjust = 0.5),
     plot.subtitle = element_text(size = 14, hjust = 0.5),
-    # axis.title.x = element_text(size = 14),
-    # axis.title.y = element_text(size = 14),
-    # axis.text.x = element_text(size = 12),
-    # axis.text.y = element_text(size = 12),
-    plot.margin = margin(20, 20, 20, 20)
+    plot.margin = margin(20, 20, 20, 20),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)  # Updated x-axis text settings
   )
 
+# Custom CSS for JAMA-inspired styling with improved navbar readability
+jama_css <- "
+  body {
+    background-color: #f8f8f8;
+    color: #333333;
+    font-family: Arial, sans-serif;
+  }
+  .container-fluid {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .well {
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  }
+  .btn-default {
+    color: #ffffff;
+    background-color: #0072B5;
+    border-color: #0072B5;
+  }
+  .btn-default:hover {
+    background-color: #005a8e;
+    border-color: #005a8e;
+  }
+  .form-control {
+    border-color: #dddddd;
+  }
+  .selectize-input {
+    border-color: #dddddd;
+  }
+  .shiny-notification {
+    background-color: #0072B5;
+    color: #ffffff;
+  }
+  /* Updated styles for the header */
+  .navbar {
+    background-color: #B24745FF;
+    border-color: #B24745FF;
+  }
+  .navbar-brand {
+    color: #ffffff !important;
+  }
+  .navbar-nav > li > a {
+    color: #ffffff !important;
+    font-weight: bold;
+  }
+  .navbar-nav > li > a:hover,
+  .navbar-nav > li > a:focus {
+    background-color: #CC79A7 !important;
+    color: #ffffff !important;
+  }
+  .navbar-nav > .active > a,
+  .navbar-nav > .active > a:hover,
+  .navbar-nav > .active > a:focus {
+    color: #ffffff !important;
+    background-color: #B24745FF !important;
+  }
+  .citation {
+    background-color: #f8f8f8;
+    border-left: 5px solid #0072B5;
+    padding: 15px;
+    margin: 20px 0;
+    font-size: 0.9em;
+    font-style: italic;
+  }
+  .citation strong {
+    font-style: normal;
+  }
+"
 
 # UI for Shiny App
 ui <- fluidPage(
-  titlePanel("CAD PRS Variability"),
-  "Plot ancestry-normalized CAD polygenic risk scores for a random selection of individuals from a HGDP/1k Genomes reference population",
-  sidebarLayout(
-    sidebarPanel(
-      markdown(
-        mds = c(
-          "#### 1) Select CAD PGS",
-          "Select PGS for CAD obtained from the [PGS Catalog](https://www.pgscatalog.org/trait/EFO_0001645/)"
-        )
-      ),
-      pickerInput("selected_models",
-                  label = NULL,
-                  choices = model_list,
-                  selected = model_list,
-                  options = pickerOptions(
-                    actionsBox = TRUE,
-                    size = 10,
-                    selectedTextFormat = "count > 3"
-                  ),
-                  multiple = TRUE),
-      hr(),
-      markdown(
-        mds = c(
-          "#### 2) Set Random Seed",
-          "Set a random seed used to randomly select indiviuals for plotting"
-        )
-      ),
-      numericInput("seed_input",
-                   label = NULL,
-                   value = 8675309),
-      hr(),
-      markdown(
-        mds = c(
-          "#### 3) Select number of individuals",
-          "Select number of individuals to include in plot of PGS variability"
-        )
-      ),
-      sliderInput("sample_size_input",
-                  label = NULL,
-                  min = 1,
-                  max = 6,
-                  value = 5,
-                  step = 1),
-      hr(),
-      actionButton("submit_button", "Generate Plot")
+  tags$head(
+    tags$style(HTML(jama_css))
+  ),
+  navbarPage(
+    "CAD PRS Variability",
+    tabPanel("Plot",
+             p("Plot ancestry-normalized CAD polygenic risk scores for a random selection of individuals from the 1000 Genomes + HGDP reference panel"),
+             sidebarLayout(
+               sidebarPanel(
+                 width = 3,  # Narrower sidebar
+                 actionButton("plot_button", "Plot PGS Variability", class = "btn-block"),
+                 hr(),
+                 checkboxInput("show_advanced", "Show Advanced Options", FALSE),
+                 conditionalPanel(
+                   condition = "input.show_advanced == true",
+                   selectInput("selected_models", 
+                               label = "Select CAD PGS", 
+                               choices = model_list, 
+                               selected = model_list, 
+                               multiple = TRUE),
+                   numericInput("seed_input", 
+                                label = "Set Random Seed (leave empty for random)", 
+                                value = NA),
+                   sliderInput("sample_size_input", 
+                               label = "Select number of individuals", 
+                               min = 1, 
+                               max = 10, 
+                               value = 5, 
+                               step = 1)
+                 )
+               ),
+               mainPanel(
+                 width = 9,  # Wider main panel
+                 plotOutput("score_plot", height = "600px")
+               )
+             )
     ),
-    mainPanel(
-      plotOutput("score_plot"),
-      # p("Plot ancestry-normalized CAD polygenic risk scores for a random selection of individuals from a HGDP/1k Genomes reference population")
+    tabPanel("About",
+             fluidRow(
+               column(12,
+                      h2("About CAD PRS Variability"),
+                      p("This application visualizes the variability of Coronary Artery Disease (CAD) Polygenic Risk Scores (PRS) across different models and individuals."),
+                      h3("Key Features:"),
+                      tags$ul(
+                        tags$li("Visualize CAD PRS variability for randomly selected individuals from the 1000 Genomes + HGDP reference panel."),
+                        tags$li("Compare multiple PRS models side by side."),
+                        tags$li("Customize the number of individuals and specific PRS models to display."),
+                        tags$li("Set a specific random seed for reproducibility or generate new random selections.")
+                      ),
+                      h3("Data Source:"),
+                      p("The PRS models used in this application are sourced from the ", 
+                        tags$a(href = "https://www.pgscatalog.org/", "PGS Catalog"), 
+                        "focusing on those related to Coronary Artery Disease."),
+                      h3("How to Use:"),
+                      tags$ol(
+                        tags$li("Navigate to the 'Plot' tab."),
+                        tags$li("Click 'Plot PGS Variability' to generate a visualization."),
+                        tags$li("Use 'Advanced Options' to customize the plot:"),
+                        tags$ul(
+                          tags$li("Select specific CAD PGS models to include."),
+                          tags$li("Set a random seed for reproducibility."),
+                          tags$li("Adjust the number of individuals to display.")
+                        )
+                      ),
+                      h3("Manuscript Citation:"),
+                      div(class = "citation",
+                          p(strong("Population Performance and Individual Agreement of Coronary Artery Disease Polygenic Risk Scores")),
+                          p("Sarah A. Abramowitz, Kristin Boulier, Karl Keat, Katie M. Cardone, Manu Shivakumar, John DePaolo, Renae Judy, Dokyoon Kim, Daniel J. Rader, Ritchie, Benjamin F. Voight, Bogdan Pasaniuc, Michael G. Levin, Scott M. Damrauer"),
+                          p("doi: ", a(href = "https://doi.org/10.1101/2024.07.25.24310931", "https://doi.org/10.1101/2024.07.25.24310931"))
+                      ),
+                      h3("About the Developers:"),
+                      p("This application was developed by Sarah Abramowitz and Michael Levin at the University of Pennsylvania. For more information or to report issues, please contact ", tags$a(href = "mailto:Michael.Levin@pennmedicine.upenn.edu", "Michael.Levin@pennmedicine.upenn.edu"))
+               )
+             )
     )
   )
 )
 
-
 # Server logic
-server <- function(input, output) {
-  observeEvent(input$submit_button, {
-    req(input$selected_models)
-    model_selection <- input$selected_models
-
-    seed_value <- isolate(input$seed_input)  # Retrieve the seed value
-
-    set.seed(seed_value)  # Set the seed value
-
+server <- function(input, output, session) {
+  # Reactive value to store the current seed
+  current_seed <- reactiveVal(NULL)
+  
+  # Function to generate the plot
+  generate_plot <- function() {
+    model_selection <- if (is.null(input$selected_models)) model_list else input$selected_models
+    
+    # Use the seed from advanced options if set, otherwise generate a new one
+    if (!is.na(input$seed_input) && !is.null(input$seed_input)) {
+      seed_value <- input$seed_input
+    } else {
+      seed_value <- as.integer(runif(1) * 1e6)  # Generate a random seed
+      showNotification(paste("Using a randomly generated seed:", seed_value), type = "message")
+    }
+    current_seed(seed_value)  # Store the current seed
+    
+    set.seed(seed_value)
+    
     ntile_list <- paste("ntile_", model_selection, sep = "")
-    sample_size <- input$sample_size_input  # Get the user-selected sample size
+    sample_size <- ifelse(is.null(input$sample_size_input), 5, input$sample_size_input)
     random_ntile <- sample_n(df_ntile_norm, sample_size) %>% select(IID, all_of(ntile_list))
-
+    
     melt_random_ntile <- melt(random_ntile, id = c("IID")) %>%
       mutate(variable = str_replace(variable, "ntile_", ""))
-
-    # Calculate mean percentiles
-    mean_percentiles <- melt_random_ntile %>%
-      group_by(IID) %>%
-      summarize(mean_percentile = mean(value))
-
-    # Merge the mean percentiles back with the melted data for plotting
-    melt_random_ntile <- melt_random_ntile %>%
-      left_join(mean_percentiles, by = "IID")
-
+    
     melt_random_ntile$variable <- factor(melt_random_ntile$variable, levels = model_list)
-
+    
+    point_plot <- ggplot(data = melt_random_ntile, aes(x = variable, y = value, color = IID, group = IID)) +
+      geom_point(size = 3) +
+      geom_hline(yintercept = 50, linetype = "dashed") +
+      facet_grid(rows = vars(IID)) +
+      scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+      labs(x = "", y = "Percentile", title = paste("Seed:", current_seed())) +
+      custom_theme +
+      scale_color_jama(guide = "none")
+    
+    beeswarm_plot <- melt_random_ntile %>%
+      ggplot(aes(y = value, fill = IID), x = "a") +
+      geom_swarm(dotsize = 1.5, color = "black", alpha = 0.5) +
+      geom_boxplot(width = 0.15, outlier.shape = NA, fill = "white", linewidth = 1) +
+      geom_hline(yintercept = 50, linetype = "dashed") +
+      facet_grid(rows = vars(IID), scales = "free_x") +
+      scale_fill_jama(guide = "none") +
+      labs(x = "", y = "Percentile") +
+      scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+      custom_theme +
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank())
+    
+    (point_plot | beeswarm_plot) +
+      plot_layout(ncol = 2, widths = c(9,1))
+  }
+  
+  # Reactive value to trigger initial plot
+  initial_load <- reactiveVal(FALSE)
+  
+  # Observe the plot button click
+  observeEvent(input$plot_button, {
     output$score_plot <- renderPlot({
-      # line_plot <- ggplot(data = melt_random_ntile, aes(x = variable, y = value, color = IID, group = IID)) +
-      #   geom_line(size = 1.25) +
-      #   geom_text(data = mean_percentiles, aes(x = 1, y = 100, label = paste("Mean:", round(mean_percentile, 2))), hjust = 0, vjust = 0) +
-      #   geom_hline(yintercept = 50, linetype = "dashed") +
-      #   facet_grid(rows = vars(IID)) +
-      #   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
-      #   labs(x = "", y = "Percentile") +
-      #   custom_theme +
-      #   theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust = 1)) +
-      #   scale_color_jama(guide = "none")
-
-      score_plot_ntile_all <- ggplot(data = melt_random_ntile, aes(x = variable, y = value, color = IID, group = IID)) +
-        geom_point(size = 3) +
-        geom_text(data = mean_percentiles,
-                  aes(x = length(model_list), y = 100, label = paste("Mean:", round(mean_percentile, 2))),
-                  hjust = 1, vjust = 10, color = "black") +
-        geom_hline(yintercept = 50, linetype = "dashed") +
-        labs(x = "Score", y = "Percentile") +
-        custom_theme +
-        facet_wrap(IID ~ . , nrow = sample_size) +
-        theme(axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1), strip.background = element_blank(),
-              strip.text.x = element_blank()) +
-        scale_color_jama(guide = "none")
-
-      score_plot_ntile_all
-      #
-      # beeswarm_plot <- melt_random_ntile %>%
-      #   ggplot(aes(y = value, fill = IID), x = "a") +
-      #   geom_swarm(dotsize = 1.5, color = "black") +
-      #   geom_hline(yintercept = 50, linetype = "dashed") +
-      #   facet_grid(rows = vars(IID), scales = "free_x") +
-      #   scale_fill_jama(guide = "none") +
-      #   labs(x = "", y = "Percentile") +
-      #   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
-      #   custom_theme +
-      #   theme(axis.text.x = element_blank(),
-      #         axis.ticks.x = element_blank())
-      #
-      # (score_plot_ntile_all | beeswarm_plot) +
-      #   plot_layout(ncol = 2, widths = c(9,1))
-      #
-    },
-    height = 600)
+      generate_plot()
+    })
+  })
+  
+  # Automatically generate plot on app startup
+  observe({
+    req(initial_load())
+    output$score_plot <- renderPlot({
+      generate_plot()
+    })
+  })
+  
+  # Set initial_load to TRUE after a short delay
+  # This ensures all reactive elements are properly initialized
+  session$onFlushed(function() {
+    initial_load(TRUE)
   })
 }
 
-
 # Run the application
 shinyApp(ui = ui, server = server)
-
-# Forecasting Sandbox ----
-# This is an example for a Shinylive R app
-# The app provides a forecasting sandbox for the AirPassengers dataset
-# It supports 3 stats forecasting models - Linear Regression, ARIMA, and Holt-Winters
-
-# library(shiny)
-# library(vroom)
-# data(AirPassengers)
-# 
-# df_ntile_norm <- vroom::vroom("CAD_PGS_ref_ntile.txt")
-# # UI ----
-# ui <- fluidPage(
-# 
-#   # App title ----
-#   titlePanel("Sarah's frustrated Forecasting Sandbox - vroooom"),
-#   sidebarLayout(
-# 
-#     sidebarPanel(width = 3,
-#                  selectInput(inputId = "model",
-#                              label = "Select Model",
-#                              choices = c("Linear Regression", "ARIMA", "Holt-Winters"),
-#                              selected = "Linear Regression"),
-#                  # Linear Regression model arguments
-#                  conditionalPanel(condition = "input.model == 'Linear Regression'",
-#                                   checkboxGroupInput(inputId = "lm_args",
-#                                                      label = "Select Regression Features:",
-#                                                      choices = list("Trend" = 1,
-#                                                                     "Seasonality" = 2),
-#                                                      selected = 1)),
-#                  # ARIMA model arguments
-#                  conditionalPanel(condition = "input.model == 'ARIMA'",
-#                                   h5("Order Parameters"),
-#                                   sliderInput(inputId = "p",
-#                                               label = "p:",
-#                                               min = 0,
-#                                               max = 5,
-#                                               value = 0),
-#                                   sliderInput(inputId = "d",
-#                                               label = "d:",
-#                                               min = 0,
-#                                               max = 5,
-#                                               value = 0),
-#                                   sliderInput(inputId = "q",
-#                                               label = "q:",
-#                                               min = 0,
-#                                               max = 5,
-#                                               value = 0),
-#                                   h5("Seasonal Parameters:"),
-#                                   sliderInput(inputId = "P",
-#                                               label = "P:",
-#                                               min = 0,
-#                                               max = 5,
-#                                               value = 0),
-#                                   sliderInput(inputId = "D",
-#                                               label = "D:",
-#                                               min = 0,
-#                                               max = 5,
-#                                               value = 0),
-#                                   sliderInput(inputId = "Q",
-#                                               label = "Q:",
-#                                               min = 0,
-#                                               max = 5,
-#                                               value = 0)
-#                  ),
-#                  # Holt Winters model arguments
-#                  conditionalPanel(condition = "input.model == 'Holt-Winters'",
-#                                   checkboxGroupInput(inputId = "hw_args",
-#                                                      label = "Select Holt-Winters Parameters:",
-#                                                      choices = list("Beta" = 2,
-#                                                                     "Gamma" = 3),
-#                                                      selected = c(1, 2, 3)),
-#                                   selectInput(inputId = "hw_seasonal",
-#                                               label = "Select Seasonal Type:",
-#                                               choices = c("Additive", "Multiplicative"),
-#                                               selected = "Additive")),
-# 
-#                  checkboxInput(inputId = "log",
-#                                label = "Log Transformation",
-#                                value = FALSE),
-#                  sliderInput(inputId = "h",
-#                              label = "Forecasting Horizon:",
-#                              min = 1,
-#                              max = 60,
-#                              value = 24)
-#                  #   actionButton(inputId = "update",
-#                  #                 label = "Update!")
-# 
-#     ),
-# 
-#     # Main panel for displaying outputs ----
-#     mainPanel(width = 9,
-#               # Forecast Plot ----
-#               plotOutput(outputId = "fc_plot",
-#                          height = "400px")
-# 
-#     )
-#   )
-# )
-# 
-# # Define server logic required to draw a histogram ----
-# server <- function(input, output) {
-#   # Load the dataset a reactive object
-#   d <- reactiveValues(df = data.frame(input = as.numeric(AirPassengers),
-#                                       index = seq.Date(from = as.Date("1949-01-01"),
-#                                                        by = "month",
-#                                                        length.out = length(AirPassengers))),
-#                       air = AirPassengers)
-# 
-#   # Log transformation
-#   observeEvent(input$log,{
-#     if(input$log){
-#       d$df <- data.frame(input = log(as.numeric(AirPassengers)),
-#                          index = seq.Date(from = as.Date("1949-01-01"),
-#                                           by = "month",
-#                                           length.out = length(AirPassengers)))
-# 
-#       d$air <- log(AirPassengers)
-#     } else {
-#       d$df <- data.frame(input = as.numeric(AirPassengers),
-#                          index = seq.Date(from = as.Date("1949-01-01"),
-#                                           by = "month",
-#                                           length.out = length(AirPassengers)))
-# 
-#       d$air <- AirPassengers
-#     }
-#   })
-# 
-#   # The forecasting models execute under the plot render
-#   output$fc_plot <- renderPlot({
-# 
-#     # if adding a prediction intervals level argument set over here
-#     pi <- 0.95
-# 
-#     # Holt-Winters model
-#     if(input$model == "Holt-Winters"){
-#       a <- b <- c <- NULL
-# 
-#       if(!"2" %in% input$hw_args){
-#         b <- FALSE
-#       }
-# 
-#       if(!"3" %in% input$hw_args){
-#         c <- FALSE
-#       }
-# 
-#       md <- HoltWinters(d$air,
-#                         seasonal = ifelse(input$hw_seasonal == "Additive", "additive", "multiplicative"),
-#                         beta = b,
-#                         gamma = c
-#       )
-#       fc <- predict(md, n.ahead = input$h, prediction.interval = TRUE) |>
-#         as.data.frame()
-#       fc$index <- seq.Date(from = as.Date("1961-01-01"),
-#                            by = "month",
-#                            length.out = input$h)
-#       # ARIMA model
-#     } else if(input$model == "ARIMA"){
-# 
-#       md <- arima(d$air,
-#                   order = c(input$p, input$d, input$q),
-#                   seasonal = list(order = c(input$P, input$D, input$Q))
-#       )
-#       fc <- predict(md, n.ahead = input$h, prediction.interval = TRUE) |>
-#         as.data.frame()
-#       names(fc) <- c("fit", "se")
-# 
-#       fc$index <- seq.Date(from = as.Date("1961-01-01"),
-#                            by = "month",
-#                            length.out = input$h)
-# 
-#       fc$upr <- fc$fit + 1.96 * fc$se
-#       fc$lwr <- fc$fit - 1.96 * fc$se
-#       # Linear Regression model
-#     } else if(input$model == "Linear Regression"){
-# 
-#       d_lm <- d$df
-# 
-#       d_fc <- data.frame(index = seq.Date(from = as.Date("1961-01-01"),
-#                                           by = "month",
-#                                           length.out = input$h))
-# 
-#       if("1" %in% input$lm_args){
-#         d_lm$trend <- 1:nrow(d_lm)
-#         d_fc$trend <- (max(d_lm$trend) + 1):(max(d_lm$trend) + input$h)
-#       }
-# 
-#       if("2" %in% input$lm_args){
-#         d_lm$season <- as.factor(months((d_lm$index)))
-#         d_fc$season <- factor(months((d_fc$index)), levels = levels(d_lm$season))
-#       }
-# 
-#       md <- lm(input ~ ., data = d_lm[, - which(names(d_lm) == "index")])
-# 
-#       fc <- predict(md, n.ahead = input$h, interval = "prediction",
-#                     level = pi, newdata = d_fc) |>
-#         as.data.frame()
-# 
-# 
-#       fc$index <- seq.Date(from = as.Date("1961-01-01"),
-#                            by = "month",
-#                            length.out = input$h)
-# 
-#     }
-# 
-#     # Setting the plot
-#     at_x <- pretty(seq.Date(from = min(d$df$index),
-#                             to = max(fc$index),
-#                             by = "month"))
-# 
-#     at_y <- c(pretty(c(d$df$input, fc$upr)), 1200)
-# 
-# 
-# 
-#     print(c(min(d$df$input), max(fc$upr)))
-# 
-# 
-#     plot(x = d$df$index, y = d$df$input,
-#          col = "#1f77b4",
-#          type = "l",
-#          frame.plot = FALSE,
-#          axes = FALSE,
-#          panel.first = abline(h = at_y, col = "grey80"),
-#          main = "AirPassengers Forecast",
-#          xlim = c(min(d$df$index), max(fc$index)),
-#          ylim = c(min(c(min(d$df$input), min(fc$lwr))), max(c(max(fc$upr), max(d$df$input)))),
-#          xlab = paste("Model:", input$model, sep = " "),
-#          ylab = "Num. of Passengers (in Thousands)")
-#     mtext(side =1, text = format(at_x, format = "%Y-%M"), at = at_x,
-#           col = "grey20", line = 1, cex = 0.8)
-# 
-#     mtext(side =2, text = format(at_y, scientific = FALSE), at = at_y,
-#           col = "grey20", line = 1, cex = 0.8)
-#     lines(x = fc$index, y = fc$fit, col = '#1f77b4', lty = 2, lwd = 2)
-#     lines(x = fc$index, y = fc$upr, col = 'blue', lty = 2, lwd = 2)
-#     lines(x = fc$index, y = fc$lwr, col = 'blue', lty = 2, lwd = 2)
-# 
-#   })
-# 
-# }
-# #
-# # Create Shiny app ----
-# shinyApp(ui = ui, server = server)
